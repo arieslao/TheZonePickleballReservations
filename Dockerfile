@@ -34,11 +34,11 @@ RUN playwright install chromium
 # Copy application code
 COPY . .
 
-# Create session directory
-RUN mkdir -p session_data
+# Create session directory and make entrypoint executable
+RUN mkdir -p session_data && chmod +x entrypoint.sh
 
 # Expose port
 EXPOSE 5000
 
-# Run gunicorn
-CMD ["sh", "-c", "exec gunicorn slack_server:app --bind 0.0.0.0:${PORT:-5000} --timeout 120 --workers 1"]
+# Run entrypoint script (provides diagnostic output before starting gunicorn)
+CMD ["./entrypoint.sh"]

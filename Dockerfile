@@ -7,6 +7,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install playwright browsers (to match installed playwright version)
+RUN playwright install chromium
+
 # Copy application code
 COPY . .
 
@@ -16,5 +19,5 @@ RUN mkdir -p session_data
 # Expose port (Railway will set PORT env var)
 EXPOSE 5000
 
-# Run with gunicorn
-CMD gunicorn slack_server:app --bind 0.0.0.0:${PORT:-5000}
+# Run with gunicorn using shell form for variable expansion
+CMD exec gunicorn slack_server:app --bind 0.0.0.0:${PORT:-5000} --timeout 120 --workers 1

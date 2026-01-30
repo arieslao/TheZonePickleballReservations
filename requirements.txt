@@ -2,3 +2,5 @@ playwright
 pytz
 python-dotenv
 requests
+flask
+gunicorn

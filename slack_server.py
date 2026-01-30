@@ -18,6 +18,8 @@ To run locally with ngrok:
 4. Copy the ngrok URL to Slack App's Interactivity Request URL
 """
 
+print("=== slack_server.py starting ===", flush=True)
+
 import os
 import json
 import hmac

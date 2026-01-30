@@ -127,7 +127,7 @@ def run_booking_in_background(date_str: str, court: str, time_slot: str, user_na
 @app.route("/", methods=["GET"])
 def health_check():
     """Health check endpoint."""
-    return jsonify({"status": "ok", "message": "Slack Interactive Server is running"})
+    return jsonify({"status": "ok", "version": "v2-threading", "message": "Slack Interactive Server is running"})
 
 
 @app.route("/slack/actions", methods=["POST"])

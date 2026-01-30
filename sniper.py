@@ -49,10 +49,12 @@ MANILA_TZ = pytz.timezone('Asia/Manila')
 URL_BOOKING = "https://zonemakati.skedda.com/booking"
 
 # Enable waiting for midnight (set to True for production)
-ENABLE_WAIT_FOR_MIDNIGHT = False  # Set to True before deploying to GitHub
+# Read from env: ENABLE_WAIT_FOR_MIDNIGHT=true
+ENABLE_WAIT_FOR_MIDNIGHT = os.environ.get("ENABLE_WAIT_FOR_MIDNIGHT", "false").lower() == "true"
 
 # Run with visible browser for local testing (set to True for GitHub Actions)
-HEADLESS_MODE = False  # Set to True before deploying to GitHub
+# Read from env: HEADLESS_MODE=true
+HEADLESS_MODE = os.environ.get("HEADLESS_MODE", "false").lower() == "true"
 
 # Session storage path (for persistent login)
 SESSION_DIR = Path(__file__).parent / "session_data"

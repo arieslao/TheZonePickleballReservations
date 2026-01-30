@@ -24,6 +24,7 @@ import hmac
 import hashlib
 import time
 import asyncio
+import threading
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from pathlib import Path
@@ -86,15 +87,41 @@ def send_slack_response(response_url: str, message: str, replace_original: bool 
     return response.status_code == 200
 
 
-async def book_specific_slot(date_str: str, court: str, time_slot: str):
-    """Book a specific slot using the sniper workflow."""
-    from sniper import book_slot_direct
+def run_booking_in_background(date_str: str, court: str, time_slot: str, user_name: str, response_url: str):
+    """Run the booking process in a background thread."""
+    def do_booking():
+        from sniper import book_slot_direct
 
-    try:
-        success, message = await book_slot_direct(date_str, court, time_slot)
-        return success, message
-    except Exception as e:
-        return False, f"Booking failed: {str(e)}"
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            success, message = loop.run_until_complete(
+                book_slot_direct(date_str, court, time_slot)
+            )
+            loop.close()
+
+            if success:
+                send_slack_response(
+                    response_url,
+                    f"✅ *Booking Confirmed!*\n*Court:* {court}\n*Time:* {time_slot}\n*Date:* {date_str}\n\nBooked by @{user_name}",
+                    replace_original=False
+                )
+            else:
+                send_slack_response(
+                    response_url,
+                    f"❌ *Booking Failed*\n{message}\n\nPlease try booking manually.",
+                    replace_original=False
+                )
+        except Exception as e:
+            print(f"Booking error: {str(e)}")
+            send_slack_response(
+                response_url,
+                f"❌ *Error:* {str(e)}",
+                replace_original=False
+            )
+
+    thread = threading.Thread(target=do_booking)
+    thread.start()
 
 
 @app.route("/", methods=["GET"])
@@ -134,42 +161,14 @@ def handle_slack_action():
 
                     print(f"Booking request from {user_name}: {court} at {time_slot} on {date_str}")
 
-                    # Send immediate acknowledgment
-                    send_slack_response(
-                        response_url,
-                        f"⏳ Booking *{court}* at *{time_slot}* on *{date_str}*...\nRequested by @{user_name}",
-                        replace_original=False
-                    )
+                    # Start booking in background thread (don't block the response)
+                    run_booking_in_background(date_str, court, time_slot, user_name, response_url)
 
-                    # Run the booking in background
-                    try:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                        success, message = loop.run_until_complete(
-                            book_specific_slot(date_str, court, time_slot)
-                        )
-                        loop.close()
-
-                        if success:
-                            send_slack_response(
-                                response_url,
-                                f"✅ *Booking Confirmed!*\n*Court:* {court}\n*Time:* {time_slot}\n*Date:* {date_str}\n\nBooked by @{user_name}",
-                                replace_original=False
-                            )
-                        else:
-                            send_slack_response(
-                                response_url,
-                                f"❌ *Booking Failed*\n{message}\n\nPlease try booking manually.",
-                                replace_original=False
-                            )
-                    except Exception as e:
-                        send_slack_response(
-                            response_url,
-                            f"❌ *Error:* {str(e)}",
-                            replace_original=False
-                        )
-
-                    return jsonify({"response_type": "in_channel"})
+                    # Return immediately to Slack (within 3 seconds)
+                    return jsonify({
+                        "response_type": "in_channel",
+                        "text": f"⏳ Booking *{court}* at *{time_slot}* on *{date_str}*...\nRequested by @{user_name}"
+                    })
 
     # Default response
     return jsonify({"response_type": "ephemeral", "text": "Action received"})

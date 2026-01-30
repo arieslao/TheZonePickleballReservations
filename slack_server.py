@@ -26,9 +26,23 @@ import time
 import asyncio
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
+
+# Create session file from environment variable (for Railway deployment)
+# This allows us to store the session as a secret and write it to a file at runtime
+SESSION_DIR = Path(__file__).parent / "session_data"
+SKEDDA_SESSION = os.environ.get("SKEDDA_SESSION", "")
+
+if SKEDDA_SESSION:
+    SESSION_DIR.mkdir(exist_ok=True)
+    session_file = SESSION_DIR / "auth.json"
+    session_file.write_text(SKEDDA_SESSION)
+    print(f"Session file created at {session_file}")
+else:
+    print("Warning: SKEDDA_SESSION not set - booking will fail without session data")
 
 app = Flask(__name__)
 

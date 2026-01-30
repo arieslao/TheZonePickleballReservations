@@ -1,0 +1,67 @@
+name: Daily Availability Check
+
+on:
+  schedule:
+    # Run at midnight Manila time (PHT = UTC+8)
+    # Midnight PHT = 16:00 UTC (4 PM UTC previous day)
+    - cron: '0 16 * * *'
+
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  check-availability:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install chromium
+
+      - name: Create session directory
+        run: mkdir -p session_data
+
+      - name: Restore session state
+        env:
+          SESSION_DATA: ${{ secrets.SKEDDA_SESSION }}
+        run: |
+          if [ -n "$SESSION_DATA" ]; then
+            echo "$SESSION_DATA" > session_data/auth.json
+            echo "Session restored from secrets"
+          else
+            echo "Warning: No session data in secrets. Run --setup locally first."
+          fi
+
+      - name: Run availability check
+        env:
+          SKEDDA_EMAIL: ${{ secrets.SKEDDA_EMAIL }}
+          SKEDDA_PASSWORD: ${{ secrets.SKEDDA_PASSWORD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+          TARGET_START_HOUR: '19'
+          TARGET_END_HOUR: '21'
+          ALT_START_HOUR: '17'
+          TARGET_COURTS: 'Wood 3,Wood 2,Wood 4,Wood 6,Wood 1,Wood 5'
+          DAYS_AHEAD_LIMIT: '4'
+          HEADLESS_MODE: 'true'
+        run: python sniper.py --check
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: '*.png'
+          retention-days: 7

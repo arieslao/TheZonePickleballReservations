@@ -19,5 +19,6 @@ RUN mkdir -p session_data
 # Expose port (Railway will set PORT env var)
 EXPOSE 5000
 
-# Run with gunicorn using shell form for variable expansion
-CMD exec gunicorn slack_server:app --bind 0.0.0.0:${PORT:-5000} --timeout 120 --workers 1
+# Override the entrypoint from base image and run gunicorn directly
+ENTRYPOINT []
+CMD ["sh", "-c", "exec gunicorn slack_server:app --bind 0.0.0.0:${PORT:-5000} --timeout 120 --workers 1"]

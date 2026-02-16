@@ -19,17 +19,8 @@ An automated reservation system that:
 - Runs headlessly in a Docker container on Railway
 
 ## Architecture
-[INSERT SIMPLE DIAGRAM HERE — even a text-based one]
+<img width="1648" height="724" alt="image" src="https://github.com/user-attachments/assets/15fbcff8-39ba-45f3-b9e7-0c1c35765cc7" />
 
-┌──────────┐    ┌──────────────┐    ┌─────────────┐
-│  Slack    │◄──►│ Flask Server │◄──►│ Sniper Bot  │
-│ Workspace │    │ (Webhooks)   │    │ (Playwright) │
-└──────────┘    └──────────────┘    └──────┬──────┘
-                                           │
-                                    ┌──────▼──────┐
-                                    │   Skedda    │
-                                    │ Booking API  │
-                                    └─────────────┘
 
 ## Technology Choices & Why
 

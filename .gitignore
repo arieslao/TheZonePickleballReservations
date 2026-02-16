@@ -1,6 +1,9 @@
 # Environment files (contain secrets)
 .env
 
+#Project Working Notes and History
+.claude
+
 # Debug screenshots
 *.png
 
